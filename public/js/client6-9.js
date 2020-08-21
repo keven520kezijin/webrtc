@@ -9,21 +9,10 @@ let snapshot = document.querySelector('button#snapshot')
 let picture = document.querySelector('canvas#picture')
 let audioplayer = document.querySelector('audio#audioplayer')
 picture.width = 640
-picture.height = 400
+picture.height = 480
 
 let videoplay = document.querySelector('video#player')
-
-// div
 let divConstraints = document.querySelector('div#constraints')
-
-// recored
-let recvideo = document.querySelector('video#recplayer')
-let btnRecord = document.querySelector('button#record')
-let btnPlay = document.querySelector('button#recplay')
-let btnDownload = document.querySelector('button#download')
-
-let buffer
-let mediaRecorder
 
 function gotDevices (deviceInfos) {
   deviceInfos.forEach((deviceInfo) => {
@@ -43,14 +32,12 @@ function gotDevices (deviceInfos) {
 }
 
 function gotMediaStream (stream) {
-  
+  videoplay.srcObject = stream
+  // audioplayer.srcObject = stream
+
   let videoTrack = stream.getVideoTracks()[0]
   let videoConstraints = videoTrack.getSettings()
   divConstraints.textContent = JSON.stringify(videoConstraints, null, 2)
-  
-  window.stream = stream
-  videoplay.srcObject = stream
-  // audioplayer.srcObject = stream
 
   return navigator.mediaDevices.enumerateDevices();
 }
@@ -73,7 +60,7 @@ function start() {
       //   // deviceId: deviceId ? deviceId : undefined
       // },
       video: true,
-      audio: true,
+      audio: false,
     }
   
     navigator.mediaDevices.getUserMedia(constraints)
@@ -94,73 +81,3 @@ filterSelect.onchange = function() {
 snapshot.onclick = function () {
   picture.getContext('2d').drawImage(videoplay, 0, 0, picture.width, picture.height)
 }
-
-function handleDataAvailable(e) {
-  if(e && e.data && e.data.size > 0) {
-    buffer.push(e.data)
-  }
-}
-
-
-function startRecord() {
-
-  buffer = []
-
-  const options = {
-    mimeType: 'video/webm;codecs=vp8'
-  }
-
-  if(!MediaRecorder.isTypeSupported(options.mimeType)) {
-    console.error(`${options.mimeType} is not supported!`)
-    return
-  }
-
-  try {
-    mediaRecorder = new MediaRecorder(window.stream, options)
-  } catch(e) {
-    console.error('Failed to create MediaRecorder: ', e)
-    return
-  }
-
-  mediaRecorder.ondataavailable = handleDataAvailable
-  mediaRecorder.start(10)
-}
-
-function stopRecord() {
-  mediaRecorder.stop()
-}
-
-btnRecord.onclick = () => {
-  if (btnRecord.textContent === 'Start Record') {
-    startRecord();
-    btnRecord.textContent = 'Stop Record'
-    btnPlay.disabled = true
-    btnDownload.disabled = true
-  } else {
-    stopRecord();
-    btnRecord.textContent = 'Start Record'
-    btnPlay.disabled = false
-    btnDownload.disabled = false
-  }
-}
-
-btnPlay.onclick = () => {
-  let blob = new Blob(buffer, {type: 'video/webm'})
-  recvideo.src = window.URL.createObjectURL(blob)
-  recvideo.srcObject = null
-  recvideo.controls = true
-  recvideo.play()
-}
-
-btnDownload.onclick = () => {
-  let blob = new Blob(buffer, {type: 'video/webm'})
-  let url = window.URL.createObjectURL(blob)
-  let a = document.createElement('a')
-
-  a.href = url
-  a.style.display = 'none'
-  a.download = 'aaa.webm'
-  a.click()
-}
-
-
